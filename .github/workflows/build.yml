@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
     
     steps:
       - name: Checkout code
@@ -24,4 +27,4 @@ jobs:
           context: .
           platforms: ${{ matrix.platforms }}
           file: docker/Dockerfile
-          tags: jblawatt/fsspec-browser:latest,jblawatt/fsspec-browser:v0.1
+          tags: ghcr.io/jblawatt/fsspec-browser:latest,ghcr.io/jblawatt/fsspec-browser:v0.1
