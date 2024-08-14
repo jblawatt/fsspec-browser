@@ -28,3 +28,4 @@ jobs:
           platforms: ${{ matrix.platforms }}
           file: docker/Dockerfile
           tags: ghcr.io/jblawatt/fsspec-browser:latest,ghcr.io/jblawatt/fsspec-browser:v0.1
+          github-token: ${{ github.token }}
