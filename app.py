@@ -13,15 +13,15 @@ from pydantic import Field
 class Settings(BaseSettings):
     DEBUG: bool = Field(default=False)
 
-    PROTOCOL: str = Field()
-    DOCUMENT_ROOT: str = Field()
+    PROTOCOL: str = Field(default="file")
+    DOCUMENT_ROOT: str = Field(default="file://")
 
     model_config = SettingsConfigDict(
         env_prefix="fsspec_browser_",
     )
 
 
-settings = Settings()
+settings = Settings()  # noqa
 templates = Jinja2Templates("templates")
 
 ASCII_404 = r"""
