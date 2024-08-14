@@ -37,6 +37,4 @@ jobs:
           push: true
           context: .
           file: docker/Dockerfile
-          tags:
-            - latest
-            - v0.1
+          tags: jblawatt/fsspec-browser:latest,jblawatt/fsspec-browser:v0.1
