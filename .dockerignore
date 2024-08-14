@@ -1,0 +1,8 @@
+Makefile
+README.md
+compose.yml
+__pycache__
+docker
+!docker/run.sh
+.*
+

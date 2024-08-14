@@ -1,0 +1,19 @@
+services:
+  fsspec-browser:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - 8080:8080
+    environment:
+    
+      FSSPEC_BROWSER_DEBUG: 0
+
+      FSSPEC_BROWSER_PROTOCOL: abfs
+      FSSPEC_BROWSER_DOCUMENT_ROOT: abfs://
+
+      FSSPEC_S3_KEY: ${FSSPEC_S3_KEY}
+      FSSPEC_S3_SECRET: ${FSSPEC_S3_SECRET}
+      FSSPEC_S3_ENDPOINT_URL: ${FSSPEC_S3_ENDPOINT_URL}
+
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
