@@ -1,7 +1,7 @@
 # fsspec-browser
 
 **fsspec-browser** utilizes the fsspec python library to implement
-a minimal frontend to browser stored data.
+a minimal frontend to browse stored data.
 
 ## Examples
 
