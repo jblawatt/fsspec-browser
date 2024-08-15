@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "fsspec-browser"
 version = "0.1.0"
-description = "**fsspec-browser** utilizes the fsspec python library to implement a minimal frontend to browser stored data."
+description = "**fsspec-browser** utilizes the fsspec python library to implement a minimal frontend to browse stored data."
 authors = ["Jens Blawatt <jblawatt@gmail.com>"]
 readme = "README.md"
 
