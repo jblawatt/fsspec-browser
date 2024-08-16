@@ -3,6 +3,9 @@ repos:
     rev: 'v1.11.1'
     hooks:
     - id: mypy
+      additional_dependencies:
+        - pydantic
+        - pydantic-settings
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.6.1
   hooks:
