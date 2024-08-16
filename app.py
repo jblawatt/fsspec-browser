@@ -6,8 +6,8 @@ from typing import Annotated
 import fsspec
 from fastapi import Depends, FastAPI, Path, Request, Response
 from fastapi.templating import Jinja2Templates
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):

@@ -18,7 +18,29 @@ adlfs = "^2024.7.0"
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13.2"
 ruff = "^0.5.7"
+pre-commit = "^3.8.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.lint]
+fixable = ["ALL"]
+select = ["E", "F", "SIM", "I"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = false
+docstring-code-line-length = "dynamic"
