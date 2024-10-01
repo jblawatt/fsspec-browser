@@ -4,6 +4,7 @@ import os.path
 from typing import Annotated, Any, TypedDict, cast
 
 import fsspec
+import uvicorn
 from fastapi import Depends, FastAPI, Path, Request, Response
 from fastapi.templating import Jinja2Templates
 from pydantic import Field
@@ -78,9 +79,9 @@ async def index_path_view(
     path: Annotated[str, Path(..., description="...")],
     request: Request,
     fs: Annotated[fsspec.AbstractFileSystem, Depends(dep_fs)],
-) -> Response | None:
+) -> Response:
     if path.endswith("favicon.ico"):
-        return None
+        return Response(status_code=404)
     return index_view_plain(path, request, fs)
 
 
@@ -123,3 +124,7 @@ def index_view_plain(
             "items": items,
         },
     )
+
+
+if __name__ == "__main__":
+    uvicorn.run(app)
