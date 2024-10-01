@@ -2,7 +2,7 @@ import functools
 import mimetypes
 import os.path
 from typing import Annotated, Any, TypedDict, cast
-from urllib.parse import quote_plus
+from urllib.parse import quote
 
 import fsspec
 import uvicorn
@@ -54,7 +54,7 @@ def to_context_item(path: str, item: dict[str, Any], sep: str) -> ItemDict:
     dirname = os.path.dirname(item["name"])
     # split the full path and urlencode the parts then
     # combine them back together by using the seperator
-    url = sep + sep.join(filter(None, map(quote_plus, path.split(sep) + [basename])))
+    url = sep + sep.join(filter(None, path.split(sep) + [basename]))
     # there is not option to add extra items to typeddict
     # so we cast it to typed dict but leave extra values.
     return cast(
@@ -62,7 +62,7 @@ def to_context_item(path: str, item: dict[str, Any], sep: str) -> ItemDict:
         {
             **item,
             "name": basename,
-            "url": url,
+            "url": quote(url),
             "dirname": dirname,
         },
     )
@@ -113,7 +113,7 @@ def index_view_plain(
     items = fs.ls(current_path, detail=True)
     items = map(functools.partial(to_context_item, path, sep=fs.sep), items)
     items = sorted(items, key=lambda o: (o["type"], o["name"]))
-    parent = fs.sep + fs.sep.join(map(quote_plus, os.path.dirname(path).split(fs.sep)))
+    parent = quote(fs.sep + path.strip(fs.sep))
 
     return templates.TemplateResponse(
         request=request,
