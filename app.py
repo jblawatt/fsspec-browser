@@ -113,7 +113,7 @@ def index_view_plain(
     items = fs.ls(current_path, detail=True)
     items = map(functools.partial(to_context_item, path, sep=fs.sep), items)
     items = sorted(items, key=lambda o: (o["type"], o["name"]))
-    parent = quote(fs.sep + path.strip(fs.sep))
+    parent = quote(fs.sep + os.path.dirname(path).strip(fs.sep))
 
     return templates.TemplateResponse(
         request=request,
