@@ -1,8 +1,7 @@
 import mimetypes
 import os.path
 import pathlib
-from contextlib import asynccontextmanager, contextmanager
-from functools import lru_cache, partial
+from functools import partial
 from typing import Annotated, Literal, TypeAlias, TypedDict, cast
 from urllib.parse import quote
 
@@ -169,10 +168,11 @@ def index_view_plain(
             media_type=mtype,
         )
 
+    def _filter_fsspecignore(item: DirInfoDict) -> bool:
+        return not matches_pattern(item["name"], fsspecignore_pattern)
+
     ls_items: list[DirInfoDict] = fs.ls(path, detail=True)
-    ls_items = filter(
-        lambda o: not matches_pattern(o["name"], fsspecignore_pattern), ls_items
-    )
+    ls_items = list(filter(_filter_fsspecignore, ls_items))
     ls_items = sorted(ls_items, key=lambda o: (o["type"], o["name"]))
 
     items = list(
@@ -218,7 +218,11 @@ def index_view_plain(
     )
 
 
-def count_items_by_key_value(items: list[DirInfoDict], key: str, value: str) -> int:
+def count_items_by_key_value(
+    items: list[DirInfoDict],
+    key: Literal["type", "name"],
+    value: Literal["file", "directory"],
+) -> int:
     return len(list(filter(lambda o: o[key] == value, items)))
 
 
@@ -260,11 +264,8 @@ def to_dir_info_context_item(
 
 
 def matches_pattern(value: str, ignore_patterns: list[str]) -> bool:
-    for p in ignore_patterns:
-        # TODO: prepare with glob.translate if python 3.13
-        if pathlib.PurePath(value).match(p):
-            return True
-    return False
+    # TODO: prepare with glob.translate if python 3.13
+    return any(pathlib.PurePath(value).match(p) for p in ignore_patterns)
 
 
 if __name__ == "__main__":  # pragma: no cover

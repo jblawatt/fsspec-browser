@@ -6,13 +6,20 @@ import fsspec
 from fastapi.testclient import TestClient
 from fsspec.implementations.dirfs import DirFileSystem
 
-from app import (DirInfoDict, Settings, app, build_path_links,
-                 count_items_by_key_value, dep_fs, matches_pattern,
-                 to_dir_info_context_item)
+from app import (
+    DirInfoDict,
+    Settings,
+    app,
+    build_path_links,
+    count_items_by_key_value,
+    dep_fs,
+    matches_pattern,
+    to_dir_info_context_item,
+)
 
 
 class BuildPathLinksTestCase(TestCase):
-    def test_default(self):
+    def test_default(self) -> None:
         result = build_path_links(str("foo/bar/baz").split("/"))
         self.assertEqual(
             result,
@@ -23,7 +30,7 @@ class BuildPathLinksTestCase(TestCase):
             ],
         )
 
-    def test_quote(self):
+    def test_quote(self) -> None:
         result = build_path_links(str("öäü/!&?/baz").split("/"))
         self.assertEqual(
             result,
@@ -37,7 +44,7 @@ class BuildPathLinksTestCase(TestCase):
 
 class CountItemsByKeyValueTestCase(TestCase):
 
-    def test_count_file(self):
+    def test_count_file(self) -> None:
         self.assertEqual(
             count_items_by_key_value(
                 [
@@ -60,7 +67,7 @@ class CountItemsByKeyValueTestCase(TestCase):
             1,
         )
 
-    def test_count_directory(self):
+    def test_count_directory(self) -> None:
         self.assertEqual(
             count_items_by_key_value(
                 [
@@ -85,7 +92,7 @@ class CountItemsByKeyValueTestCase(TestCase):
 
 
 class ToDirInfoContextItemTestCase(TestCase):
-    def test_default(self):
+    def test_default(self) -> None:
         in_: DirInfoDict = {
             "name": "/foo/bar/baz.pdf",
             "type": "file",
@@ -107,7 +114,7 @@ class ToDirInfoContextItemTestCase(TestCase):
             },
         )
 
-    def test_quote(self):
+    def test_quote(self) -> None:
         in_: DirInfoDict = {
             "name": "/foo/öäü/!&?.pdf",
             "type": "file",
@@ -130,17 +137,17 @@ class ToDirInfoContextItemTestCase(TestCase):
         )
 
 
-def dep_fs_test():
+def dep_fs_test() -> DirFileSystem:
     return DirFileSystem("testdata", fsspec.filesystem("file"))
 
 
 class IndexViewPlanTestCase(TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         app.dependency_overrides[dep_fs] = dep_fs_test
         self.client = TestClient(app)
 
-    def test_default(self):
+    def test_default(self) -> None:
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -148,7 +155,7 @@ class IndexViewPlanTestCase(TestCase):
             "text/html; charset=utf-8",
         )
 
-    def test_format_html(self):
+    def test_format_html(self) -> None:
         response = self.client.get("/?format=html")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -156,7 +163,7 @@ class IndexViewPlanTestCase(TestCase):
             "text/html; charset=utf-8",
         )
 
-    def test_format_json(self):
+    def test_format_json(self) -> None:
         response = self.client.get("/?format=json")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -164,15 +171,15 @@ class IndexViewPlanTestCase(TestCase):
             "application/json",
         )
 
-    def test_favicon_fallback(self):
+    def test_favicon_fallback(self) -> None:
         response = self.client.get("/favicon.ico")
         self.assertEqual(response.status_code, 404)
 
-    def test_not_exists(self):
+    def test_not_exists(self) -> None:
         response = self.client.get("/file-not-found.txt")
         self.assertEqual(response.status_code, 404)
 
-    def test_test_txt(self):
+    def test_test_txt(self) -> None:
         response = self.client.get("/test.txt")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, "lorem ipsum\n")
@@ -184,7 +191,7 @@ class IndexViewPlanTestCase(TestCase):
 
 class MatchPatternTest(TestCase):
 
-    def test__default(self):
+    def test__default(self) -> None:
         self.assertTrue(matches_pattern("foo/bar/baz.pdf", ["*.pdf"]))
         self.assertTrue(not matches_pattern("foo/bar/baz.pdf", ["*.py"]))
         self.assertTrue(matches_pattern("foo/bar/baz.pdf", ["foo/**/*"]))
@@ -193,7 +200,7 @@ class MatchPatternTest(TestCase):
 class DepFsSpecTestCase(TestCase):
 
     @mock.patch.dict(os.environ, {"FSSPEC_BROWSER_DOCUMENT_ROOT": "file:///foo"})
-    def test__default(self):
+    def test__default(self) -> None:
         settings = Settings()  # noqa
         fs: DirFileSystem = cast(DirFileSystem, dep_fs(settings))
         self.assertEqual(fs.path, "/foo")
