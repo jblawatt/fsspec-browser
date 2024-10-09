@@ -1,2 +1,2 @@
+# ignore python project files
 uv.lock
-*.py

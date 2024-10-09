@@ -2,7 +2,7 @@ import mimetypes
 import os.path
 import pathlib
 from contextlib import asynccontextmanager, contextmanager
-from functools import partial
+from functools import lru_cache, partial
 from typing import Annotated, Literal, TypeAlias, TypedDict, cast
 from urllib.parse import quote
 
@@ -11,8 +11,11 @@ import uvicorn
 from fastapi import Depends, FastAPI, Path, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
+from fsspec.implementations.dirfs import DirFileSystem
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_FSSPECIGNORE_FILENAME = ".fsspecignore"
 
 
 class Settings(BaseSettings):
@@ -31,15 +34,14 @@ class Settings(BaseSettings):
         """
     )
 
-    IGNORE_PATTERNS: list[str] = Field(default=[])
-    IGNORE_FILE: str = Field(default=".fsspecignore")
+    IGNORE_PATTERNS: list[str] = Field(default=[_FSSPECIGNORE_FILENAME])
+    IGNORE_FILE: str = Field(default=_FSSPECIGNORE_FILENAME)
 
     model_config = SettingsConfigDict(
         env_prefix="fsspec_browser_",
     )
 
 
-settings = Settings()  # noqa
 templates = Jinja2Templates("templates")
 
 ASCII_404 = r"""
@@ -67,18 +69,37 @@ class DirInfoContextItem(DirInfoDict, total=False):
     dirname: str
 
 
+class ContextDict(TypedDict):
+    is_root: bool
+    path: str
+    path_links: list[PathStepDict]
+    parent: str
+    items: list[DirInfoContextItem]
+    dirs_count: int
+    files_count: int
+
+
 ResponseFormats: TypeAlias = Literal["html", "json"]
 
 
-def dep_fs() -> fsspec.AbstractFileSystem:
-    return fsspec.filesystem(settings.PROTOCOL)
+# TODO: cache
+def dep_settings() -> Settings:
+    return Settings()  # noqa
 
 
-_IGNORE_PATTERN = []
+def dep_fs(
+    settings: Annotated[Settings, Depends(dep_settings)]
+) -> fsspec.AbstractFileSystem:
+    return DirFileSystem(
+        path=settings.DOCUMENT_ROOT,
+        fs=fsspec.filesystem(settings.PROTOCOL),
+    )
 
 
-@asynccontextmanager
-async def _build_ignore_pattern(_: FastAPI):
+# TODO: cache
+def dep_fsspecignore_pattern(
+    settings: Annotated[Settings, Depends(dep_settings)],
+) -> list[str]:
     all_patterns = set()
     for pattern in settings.IGNORE_PATTERNS:
         all_patterns.add(pattern)
@@ -89,21 +110,21 @@ async def _build_ignore_pattern(_: FastAPI):
             if pattern.startswith("#"):
                 continue
             all_patterns.add(pattern)
-    _IGNORE_PATTERN.extend(filter(None, all_patterns))
-    yield
-    _IGNORE_PATTERN.clear()
+    return list(filter(None, all_patterns))
 
 
-app = FastAPI(debug=settings.DEBUG, lifespan=_build_ignore_pattern)
+app = FastAPI(debug=bool(os.getenv("FSSPEC_BROWSER_DEBUG")))
 
 
 @app.get("/")
 async def index_root_view(
     request: Request,
     fs: Annotated[fsspec.AbstractFileSystem, Depends(dep_fs)],
+    settings: Annotated[Settings, Depends(dep_settings)],
+    fsspecignore_pattern: Annotated[list[str], Depends(dep_fsspecignore_pattern)],
     format: ResponseFormats = "html",
 ) -> Response:
-    return index_view_plain("", request, fs, format)
+    return index_view_plain("", request, fs, format, settings, fsspecignore_pattern)
 
 
 @app.get("/{path:path}")
@@ -111,11 +132,13 @@ async def index_path_view(
     path: Annotated[str, Path(..., description="...")],
     request: Request,
     fs: Annotated[fsspec.AbstractFileSystem, Depends(dep_fs)],
+    settings: Annotated[Settings, Depends(dep_settings)],
+    fsspecignore_pattern: Annotated[list[str], Depends(dep_fsspecignore_pattern)],
     format: ResponseFormats = "html",
 ) -> Response:
     if path.endswith("favicon.ico"):
         return Response(status_code=404)
-    return index_view_plain(path, request, fs, format)
+    return index_view_plain(path, request, fs, format, settings, fsspecignore_pattern)
 
 
 def index_view_plain(
@@ -123,13 +146,15 @@ def index_view_plain(
     request: Request,
     fs: fsspec.AbstractFileSystem,
     format: ResponseFormats,
+    settings: Settings,
+    fsspecignore_pattern: list[str],
 ) -> Response:
     path = path.strip(fs.sep)
-    current_path = os.path.join(settings.DOCUMENT_ROOT, path)
 
-    if not fs.exists(current_path):
+    if not fs.exists(path):
         return templates.TemplateResponse(
             request=request,
+            status_code=404,
             name="404.html",
             context={
                 "path": path,
@@ -137,15 +162,17 @@ def index_view_plain(
             },
         )
 
-    if fs.isfile(current_path):
-        mtype, _ = mimetypes.guess_type(current_path)
+    if fs.isfile(path):
+        mtype, _ = mimetypes.guess_type(path)
         return Response(
-            content=fs.read_bytes(current_path),
+            content=fs.read_bytes(path),
             media_type=mtype,
         )
 
-    ls_items: list[DirInfoDict] = fs.ls(current_path, detail=True)
-    ls_items = filter(lambda o: not matches_pattern(o["name"]), ls_items)
+    ls_items: list[DirInfoDict] = fs.ls(path, detail=True)
+    ls_items = filter(
+        lambda o: not matches_pattern(o["name"], fsspecignore_pattern), ls_items
+    )
     ls_items = sorted(ls_items, key=lambda o: (o["type"], o["name"]))
 
     items = list(
@@ -161,9 +188,9 @@ def index_view_plain(
 
     parent_path = quote(fs.sep + os.path.dirname(path).strip(fs.sep))
 
-    is_root = current_path.strip(fs.sep) == settings.DOCUMENT_ROOT.strip(fs.sep)
+    is_root = path.strip(fs.sep) == ""
 
-    context = {
+    context: ContextDict = {
         "is_root": is_root,
         "path": fs.sep + path,
         "path_links": build_path_links(path.split("/")),
@@ -232,12 +259,13 @@ def to_dir_info_context_item(
     )
 
 
-def matches_pattern(value: str) -> bool:
-    for p in _IGNORE_PATTERN:
+def matches_pattern(value: str, ignore_patterns: list[str]) -> bool:
+    for p in ignore_patterns:
+        # TODO: prepare with glob.translate if python 3.13
         if pathlib.PurePath(value).match(p):
             return True
     return False
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     uvicorn.run(app)

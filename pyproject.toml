@@ -75,4 +75,5 @@ dev = [
     "pre-commit == 3.8.0",
     "mypy>=1.11.2",
     "coverage>=7.6.2",
+    "httpx>=0.27.2",
 ]
