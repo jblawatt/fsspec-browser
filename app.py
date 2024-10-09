@@ -36,6 +36,11 @@ ASCII_404 = r"""
 """
 
 
+class PathPart(TypedDict):
+    name: str
+    href: str
+
+
 def dep_fs() -> fsspec.AbstractFileSystem:
     return fsspec.filesystem(settings.PROTOCOL)
 
@@ -115,6 +120,11 @@ def index_view_plain(
     items = sorted(items, key=lambda o: (o["type"], o["name"]))
     parent = quote(fs.sep + os.path.dirname(path).strip(fs.sep))
 
+    directories_count = len(
+        list(filter((lambda o: o.get("type") == "directory"), items))
+    )
+    files_count = len(list(filter((lambda o: o.get("type") == "file"), items)))
+
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -122,10 +132,29 @@ def index_view_plain(
             "is_root": current_path.strip(fs.sep)
             == settings.DOCUMENT_ROOT.strip(fs.sep),
             "path": fs.sep + path,
+            "path_links": build_path_links(path.split("/")),
             "parent": parent,
             "items": items,
+            "directories_count": directories_count,
+            "files_count": files_count,
         },
     )
+
+
+def build_path_links(parts: list[str]) -> list[PathPart]:
+    if not parts:
+        return []
+    if len(parts) == 1:
+        full = []
+        last = parts[0]
+    else:
+        *full, last = parts
+    return build_path_links(full) + [
+        {
+            "name": last,
+            "href": quote("/" + "/".join(full + [last])),
+        }
+    ]
 
 
 if __name__ == "__main__":

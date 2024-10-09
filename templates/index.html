@@ -1,50 +1,63 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
+  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="viewport"
-        content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width" />
+    <meta
+      name="viewport"
+      content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width"
+    />
     <title>Index of {{path}}</title>
-</head>
+    <style>
+      a.type-directory {
+        font-weight: bold;
+      }
+    </style>
+  </head>
 
-<body>
-    <h1>Index of {{path}}</h1>
+  <body>
+    <h1>
+      Index of / {%- for path in path_links -%}
+      <a href="{{ path.href }}">{{ path.text }}</a>
+      {%- if not loop.last -%}/{%- endif -%} {%- endfor -%}
+    </h1>
+    Directories: {{ directories_count }}, Files: {{ files_count }}
     <hr />
     <table>
-        <thead>
-            <tr>
-                <th>Name
-                <th>
-                <th>Type
-                <th>
-                <th>Size
-                <th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if not is_root %}
-            <tr>
-                <td><a href="{{parent}}">..</a>
-                <td>
-                <td>
-                <td>
-                <td>
-                <td>
-            </tr>
-            {% endif %}
-            {% for item in items %}
-            <tr>
-                <td><a href="{{ item.url }}">{{ item.name }}</a>
-                <td>
-                <td>{{ item.type }}
-                <td>
-                <td>{{ item.size or "-" }}
-                <td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th></th>
+          <th>Type</th>
+          <th></th>
+          <th>Size</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if not is_root %}
+        <tr>
+          <td><a href="{{parent}}">..</a></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        {% endif %} {% for item in items %}
+        <tr>
+          <td>
+            <a href="{{ item.url }}" class="type-{{ item.type }}"
+              >{{ item.name }}</a
+            >
+          </td>
+          <td></td>
+          <td>{{ item.type }}</td>
+          <td></td>
+          <td>{{ item.size or "-" }}</td>
+          <td></td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
-</body>
-
+  </body>
 </html>

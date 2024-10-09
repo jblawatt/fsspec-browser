@@ -6,7 +6,6 @@ services:
     ports:
       - 8080:8080
     environment:
-    
       FSSPEC_BROWSER_DEBUG: 0
 
       # FSSPEC_BROWSER_PROTOCOL: abfs
