@@ -17,7 +17,7 @@
   <body>
     <h1>
       Index of / {%- for path in path_links -%}
-      <a href="{{ path.href }}">{{ path.text }}</a>
+      <a href="{{ path.href }}">{{ path.name }}</a>
       {%- if not loop.last -%}/{%- endif -%} {%- endfor -%}
     </h1>
     Directories: {{ directories_count }}, Files: {{ files_count }}
