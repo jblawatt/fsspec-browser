@@ -24,3 +24,8 @@ a minimal frontend to browse stored data.
 ### Azure Blob Storage
 
 ...
+
+## Plans
+
+- .fsspecignore for filepattern to be ignored
+- casbin config for permissions

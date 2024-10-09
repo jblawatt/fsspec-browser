@@ -6,6 +6,10 @@ serve:
 	$(UV) uvicorn app:app --reload
 
 test:
-	$(UV) python -m unittest app_test.py
+	$(UV) python -m unittest discover -p '*_test.py'
+
+coverage:
+	$(UV) coverage run -m unittest discover -p '*_test.py'
+	$(UV) coverage report -m 
 
 .PHONY: serve test
