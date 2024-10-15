@@ -65,6 +65,7 @@ dependencies = [
     "jinja2 == 3.1.4",
     "pydantic-settings == 2.4.0",
     "s3fs>=2024.6.1",
+    "smbprotocol>=1.14.0",
     "uvicorn == 0.30.6",
 ]
 
